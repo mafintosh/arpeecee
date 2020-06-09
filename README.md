@@ -12,7 +12,7 @@ npm install arpeecee
 const RPC = require('arpeecee')
 
 const stream = new RPC({
-  errorEncoding: <some-abstract-encoding
+  errorEncoding: <some-abstract-encoding>
 })
 
 // define a method
