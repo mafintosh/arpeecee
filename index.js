@@ -176,7 +176,17 @@ module.exports = class RPC extends Duplex {
     return m
   }
 
+  _destroy (cb) {
+    for (const req of this.requests) {
+      req.reject(new Error('RPC stream destroyed'))
+    }
+    this.requests = []
+    cb(null)
+  }
+
   _request (method, message) {
+    if (this.destroyed) throw new Error('RPC stream destroyed')
+
     if (!this.free.length) {
       this.free.push(this.requests.length)
       this.requests.push(null)
@@ -196,6 +206,8 @@ module.exports = class RPC extends Duplex {
   }
 
   _requestNoReply (method, message) {
+    if (this.destroyed) throw new Error('RPC stream destroyed')
+
     this._push(IS_REQUEST, method.id, 0, message, method.requestEncoding)
   }
 }
