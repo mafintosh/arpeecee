@@ -65,7 +65,7 @@ module.exports = class RPC extends Duplex {
     const req = this.requests[id]
 
     if (!req) {
-      this.destroy('No request found for response')
+      this.destroy(new Error('No request found for response'))
       return null
     }
 
@@ -81,7 +81,7 @@ module.exports = class RPC extends Duplex {
       if (IS_REQUEST) {
         this._push(IS_ERROR, method, id, new Error(`Unknown method (${method})`), this.errorEncoding)
       } else {
-        this.destroy('Invalid message')
+        this.destroy(new Error('Invalid message'))
       }
       return
     }
