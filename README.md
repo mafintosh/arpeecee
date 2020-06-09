@@ -12,14 +12,14 @@ npm install arpeecee
 const RPC = require('arpeecee')
 
 const stream = new RPC({
-  errorEncoding: <some-abstract-encoding>
+  errorEncoding: someAbstractEncoding
 })
 
 // define a method
 const aMethod = stream.defineMethod({
   id: 1,
-  requestEncoding: <some-abstract-encoding>,
-  responseEncoding: <some-abstract-encoding>,
+  requestEncoding: someAbstractEncoding,
+  responseEncoding: someAbstractEncoding,
   async onrequest (value) {
     console.log('decoded request', value)
     // return decoded response
