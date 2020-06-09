@@ -124,7 +124,8 @@ module.exports = class RPC extends Duplex {
         try {
           req = m.requestEncoding.decode(message)
         } catch (err) {
-          return this.destroy(err)
+          this.destroy(err)
+          return
         }
 
         if (id === 0) {
