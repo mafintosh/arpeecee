@@ -141,7 +141,7 @@ module.exports = class RPC extends Duplex {
           return
         }
 
-        this._push(IS_RESPONSE, method, id, res, m.requestEncoding)
+        this._push(IS_RESPONSE, method, id, res, m.responseEncoding)
         return
       }
     }
