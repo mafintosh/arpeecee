@@ -50,7 +50,7 @@ module.exports = class RPC extends Duplex {
     super()
 
     this.methods = []
-    this.requests = []
+    this.requests = [null]
     this.free = []
     this.errorEncoding = opts.errorEncoding || ERROR
 
