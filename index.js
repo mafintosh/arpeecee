@@ -179,7 +179,7 @@ module.exports = class RPC extends Duplex {
 
   _destroy (cb) {
     for (const req of this.requests) {
-      req.reject(new Error('RPC stream destroyed'))
+      if (req) req.reject(new Error('RPC stream destroyed'))
     }
     this.requests = []
     cb(null)
