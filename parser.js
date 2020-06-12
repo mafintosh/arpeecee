@@ -7,6 +7,7 @@ module.exports = class Parser {
     this._varint = 0
     this._factor = 1
     this._length = 0
+    this._method = 0
     this._header = 0
     this._id = 0
     this._state = 0
@@ -31,10 +32,10 @@ module.exports = class Parser {
 
     let offset = 0
     while (offset < data.length) {
-      if (this._state === 3) offset = this._readMessage(data, offset)
+      if (this._state === 4) offset = this._readMessage(data, offset)
       else offset = this._readVarint(data, offset)
     }
-    if (this._state === 3 && this._length === 0) {
+    if (this._state === 4 && this._length === 0) {
       this._readMessage(data, offset)
     }
 
@@ -88,13 +89,25 @@ module.exports = class Parser {
         this._length -= this._consumed
         this._consumed = this._varint = 0
         if (this._length <= 0) {
-          this.destroy(new Error('Missing id'))
+          this.destroy(new Error('Missing method'))
           return false
         }
         return true
 
       case 2:
         this._state = 3
+        this._factor = 1
+        this._method = this._varint
+        this._length -= this._consumed
+        this._consumed = this._varint = 0
+        if (this._length <= 0) {
+          this.destroy(new Error('Missing id'))
+          return false
+        }
+        return true
+
+      case 3:
+        this._state = 4
         this._factor = 1
         this._id = this._varint
         this._length -= this._consumed
@@ -109,9 +122,9 @@ module.exports = class Parser {
         }
         return true
 
-      case 3:
+      case 4:
         this._state = 0
-        this.onmessage(this._header & 3, this._header >> 2, this._id, this._message, data, offset)
+        this.onmessage(this._header & 3, this._header >> 2, this._method, this._id, this._message, data, offset)
         this._message = null
         return !this.destroyed
 
@@ -120,14 +133,16 @@ module.exports = class Parser {
     }
   }
 
-  send (type, method, id, message, enc) {
-    const header = (method << 2) | type
-    const length = enc.encodingLength(message) + varint.encodingLength(header) + varint.encodingLength(id)
+  send (type, service, method, id, message, enc) {
+    const header = (service << 2) | type
+    const length = enc.encodingLength(message) + varint.encodingLength(header) + varint.encodingLength(method) + varint.encodingLength(id)
     const payload = Buffer.allocUnsafe(varint.encodingLength(length) + length)
 
     varint.encode(length, payload, 0)
     let offset = varint.encode.bytes
     varint.encode(header, payload, offset)
+    offset += varint.encode.bytes
+    varint.encode(method, payload, offset)
     offset += varint.encode.bytes
     varint.encode(id, payload, offset)
 

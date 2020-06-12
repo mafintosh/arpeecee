@@ -49,7 +49,7 @@ module.exports = class RPC extends Duplex {
   constructor (opts = {}) {
     super()
 
-    this.methods = []
+    this.services = []
     this.requests = [null]
     this.free = []
     this.errorEncoding = opts.errorEncoding || ERROR
@@ -74,12 +74,13 @@ module.exports = class RPC extends Duplex {
     return req
   }
 
-  async _onmessage (type, method, id, message) {
-    const m = this.methods[method]
+  async _onmessage (type, service, method, id, message) {
+    const s = this.services[service]
+    const m = s && s.methods[method]
 
     if (!m) {
       if (IS_REQUEST) {
-        this._push(IS_ERROR, method, id, new Error(`Unknown method (${method})`), this.errorEncoding)
+        this._push(IS_ERROR, service, method, id, new Error(`Unknown method (${method}) on service (${service})`), this.errorEncoding)
       } else {
         this.destroy(new Error('Invalid message'))
       }
@@ -137,21 +138,21 @@ module.exports = class RPC extends Duplex {
         try {
           res = await m.onrequest(req)
         } catch (err) {
-          this._push(IS_ERROR, method, id, err, m.errorEncoding)
+          this._push(IS_ERROR, service, method, id, err, m.errorEncoding)
           return
         }
 
-        this._push(IS_RESPONSE, method, id, res, m.responseEncoding)
+        this._push(IS_RESPONSE, service, method, id, res, m.responseEncoding)
         return
       }
     }
   }
 
-  _push (type, method, id, message, enc) {
+  _push (type, service, method, id, message, enc) {
     let buf
 
     try {
-      buf = this.parser.send(type, method, id, message, enc)
+      buf = this.parser.send(type, service, method, id, message, enc)
     } catch (err) {
       this.destroy(err)
       return false
@@ -170,11 +171,11 @@ module.exports = class RPC extends Duplex {
     return this.requests.length - this.free.length
   }
 
-  defineMethod (opts) {
-    const id = opts.id === undefined ? this.methods.length : opts.id
-    while (this.methods.length <= id) this.methods.push(null)
-    const m = this.methods[id] = new Method(this, id, opts)
-    return m
+  defineService (opts = {}) {
+    const id = opts.id === undefined ? this.services.length : opts.id
+    while (this.services.length <= id) this.services.push(null)
+    const s = this.services[id] = new Service(this, id)
+    return s
   }
 
   _destroy (cb) {
@@ -195,7 +196,7 @@ module.exports = class RPC extends Duplex {
 
     const id = this.free.pop()
 
-    this._push(IS_REQUEST, method.id, id, message, method.requestEncoding)
+    this._push(IS_REQUEST, method.service.id, method.id, id, message, method.requestEncoding)
 
     return new Promise((resolve, reject) => {
       this.requests[id] = {
@@ -209,25 +210,40 @@ module.exports = class RPC extends Duplex {
   _requestNoReply (method, message) {
     if (this.destroyed) throw new Error('RPC stream destroyed')
 
-    this._push(IS_REQUEST, method.id, 0, message, method.requestEncoding)
+    this._push(IS_REQUEST, message.service.id, method.id, 0, message, method.requestEncoding)
+  }
+}
+
+class Service {
+  constructor (rpc, id) {
+    this.rpc = rpc
+    this.id = id
+    this.methods = []
+  }
+
+  defineMethod (opts) {
+    const id = opts.id === undefined ? this.methods.length : opts.id
+    while (this.methods.length <= id) this.methods.push(null)
+    const m = this.methods[id] = new Method(this, id, opts)
+    return m
   }
 }
 
 class Method {
-  constructor (rpc, id, opts) {
-    this.rpc = rpc
+  constructor (service, id, opts) {
+    this.service = service
     this.id = id
     this.requestEncoding = opts.requestEncoding || BINARY
     this.responseEncoding = opts.responseEncoding || BINARY
-    this.errorEncoding = opts.errorEncoding || rpc.errorEncoding
+    this.errorEncoding = opts.errorEncoding || service.rpc.errorEncoding
     this.onrequest = opts.onrequest || null
   }
 
   request (val) {
-    return this.rpc._request(this, val)
+    return this.service.rpc._request(this, val)
   }
 
   requestNoReply (val) {
-    return this.rpc._requestNoReply(this, val)
+    return this.service.rpc._requestNoReply(this, val)
   }
 }
