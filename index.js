@@ -210,7 +210,7 @@ module.exports = class RPC extends Duplex {
   _requestNoReply (method, message) {
     if (this.destroyed) throw new Error('RPC stream destroyed')
 
-    this._push(IS_REQUEST, message.service.id, method.id, 0, message, method.requestEncoding)
+    this._push(IS_REQUEST, method.service.id, method.id, 0, message, method.requestEncoding)
   }
 }
 
