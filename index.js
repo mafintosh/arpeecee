@@ -54,7 +54,7 @@ module.exports = class RPC extends Duplex {
     this.free = []
     this.errorEncoding = opts.errorEncoding || ERROR
 
-    this.parser = new Parser({ onmessage: this._onmessage.bind(this) })
+    this.parser = new Parser({ onmessage: this._onmessage.bind(this), maxSize: opts.maxSize })
   }
 
   static ERROR = ERROR
