@@ -1,6 +1,6 @@
 {
   "name": "arpeecee",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "Simple duplex stream based binary RPC module for well defined services and methods",
   "main": "index.js",
   "dependencies": {
