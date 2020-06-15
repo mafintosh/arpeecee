@@ -130,7 +130,11 @@ module.exports = class RPC extends Duplex {
         }
 
         if (id === 0) {
-          m.onrequest(req)
+          try {
+            await m.onrequest(req)
+          } catch (_) {
+            return
+          }
           return
         }
 
